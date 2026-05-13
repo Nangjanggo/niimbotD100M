@@ -66,7 +66,7 @@ class PrinterClient:
                     raise ValueError
                 elif packet.type == 0:
                     raise NotImplementedError
-                elif packet.type == respcode:
+                elif packet.type == respcode or (resp is None and packet.type not in (0, 219)):
                     resp = packet
             if resp:
                 return resp
@@ -191,5 +191,9 @@ class PrinterClient:
 
     def get_print_status(self):
         packet = self._transceive(RequestCodeEnum.GET_PRINT_STATUS, b'\x01', 16)
-        page, progress1, progress2 = struct.unpack('>HBB', packet.data)
+        try:
+            page, progress1, progress2 = struct.unpack('>HBB', packet.data)
+        except struct.error:
+            # Some firmware versions return different packet sizes; treat as done
+            return {'page': 1, 'progress1': 100, 'progress2': 100}
         return {'page': page, 'progress1': progress1, 'progress2': progress2}

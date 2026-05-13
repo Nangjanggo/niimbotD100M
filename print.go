@@ -9,10 +9,8 @@ import (
 	"time"
 )
 
-const printerMacAddress = "08:13:F4:C4:34:53"
-
 func PrintTag(text, qrText string) error {
-	tg := tag.NewGenerator(96, 220)
+	tg := tag.NewGenerator(96, 320)
 
 	img, err := tg.GenerateImage(text, qrText)
 	if err != nil {
@@ -26,12 +24,13 @@ func PrintTag(text, qrText string) error {
 		return err
 	}
 
-	err = runPythonScript("./niimprint/niimprint/__main__.py", "-a", printerMacAddress, filename)
+	mac := os.Getenv("PRINTER_MAC")
+	err = runPythonScript("./niimprint/niimprint/__main__.py", "-a", mac, filename)
 	if err != nil {
 		return err
 	}
 
-	return nil // os.Remove(filename)
+	return nil
 }
 
 func saveImageToPng(filename string, img image.Image) error {

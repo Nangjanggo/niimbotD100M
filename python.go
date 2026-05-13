@@ -8,7 +8,7 @@ import (
 )
 
 func runPythonScript(cmdAndArgs ...string) error {
-	cmd := exec.Command("python3", cmdAndArgs...)
+	cmd := exec.Command("/usr/bin/python3", cmdAndArgs...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

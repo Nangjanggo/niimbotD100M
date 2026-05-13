@@ -3,7 +3,10 @@ package tag
 import (
 	"github.com/datumbrain/label-printer/qr"
 	"github.com/datumbrain/label-printer/text"
+	"golang.org/x/image/draw"
 	"image"
+	"image/color"
+	"strings"
 )
 
 type Generator struct {
@@ -16,30 +19,47 @@ func NewGenerator(height, width int) *Generator {
 }
 
 func (g Generator) GenerateImage(tag, qrText string) (image.Image, error) {
-	// getting QR image
-	qrCode, err := qr.GetImage(qrText, 90)
+	qrSize := g.height
+	qrCode, err := qr.GetImage(qrText, qrSize)
 	if err != nil {
 		return nil, err
 	}
 
-	// getting text image
+	fontSize := 20.0
+	spacing := 1.15
+	lineHeight := int(fontSize * spacing)
+	lines := 1 + strings.Count(tag, "\n")
+	txtHeight := lineHeight*lines + int(fontSize/4)
+	txtWidth := g.width - qrSize
+
 	txt, err := text.GetImage(text.Config{
-		Height:       25,
-		Width:        130,
-		DPI:          240.0,
-		Padding:      10,
-		FontFile:     "fonts/Arial.ttf",
-		FontSize:     6.0,
-		Hinting:      text.Full,
-		Spacing:      1.0,
+		Height:      txtHeight,
+		Width:       txtWidth,
+		DPI:         72.0,
+		Padding:     14,
+		FontFile:    "fonts/NanumGothicBold.ttf",
+		FontSize:    fontSize,
+		Hinting:     text.Full,
+		Spacing:     spacing,
 		WhiteOnBlack: false,
 	}, tag)
 	if err != nil {
 		return nil, err
 	}
 
-	// joining and rotating the image
-	finalImage := joinImages(g.height, g.width, qrCode, txt)
+	output := image.NewRGBA(image.Rect(0, 0, g.width, g.height))
+	draw.Draw(output, output.Bounds(), &image.Uniform{C: color.White}, image.Point{}, draw.Src)
 
-	return rotateImageCounterClockwise(finalImage), nil
+	// 텍스트 왼쪽, 세로 중앙
+	txtY := (g.height - txtHeight) / 2
+	draw.Draw(output,
+		image.Rect(0, txtY, txtWidth, txtY+txt.Bounds().Dy()),
+		txt, image.Point{}, draw.Over)
+
+	// QR 오른쪽 크게
+	draw.Draw(output,
+		image.Rect(txtWidth, 0, g.width, g.height),
+		qrCode, image.Point{}, draw.Over)
+
+	return output, nil
 }

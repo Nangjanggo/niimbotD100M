@@ -21,7 +21,8 @@ type Config struct {
 	Height       int     // image height in points
 	Width        int     // image width in points
 	DPI          float64 // resolution in Dots Per Inch
-	Padding      int     // text left and right padding
+	Padding      int     // text right padding and default left padding
+	PaddingLeft  int     // text left padding (overrides Padding if set)
 	FontFile     string  // path of the font to use
 	font         *truetype.Font
 	FontSize     float64 // font size in points
@@ -71,14 +72,24 @@ func GetImage(c Config, text string) (*image.RGBA, error) {
 		DPI:  c.DPI,
 	})
 
-	// Calculate the widths and print to image
-	pt := freetype.Pt(c.Padding, ctx.PointToFixed(c.FontSize).Round())
+	lineHeight := ctx.PointToFixed(c.FontSize * c.Spacing)
+
+	paddingLeft := c.Padding
+	if c.PaddingLeft > 0 {
+		paddingLeft = c.PaddingLeft
+	}
+
+	pt := freetype.Pt(paddingLeft, ctx.PointToFixed(c.FontSize).Round())
 	newline := func() {
-		pt.X = fixed.Int26_6(c.Padding) << 6
-		pt.Y += ctx.PointToFixed(c.FontSize * c.Spacing)
+		pt.X = fixed.Int26_6(paddingLeft) << 6
+		pt.Y += lineHeight
 	}
 
 	for _, x := range text {
+		if x == '\n' {
+			newline()
+			continue
+		}
 		w, _ := face.GlyphAdvance(x)
 		if x == '\t' {
 			x = ' '
