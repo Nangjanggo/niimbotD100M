@@ -18,3 +18,9 @@ func (r Request) Validate() error {
 type Response struct {
 	Status string `json:"status"`
 }
+
+type SetupRequest struct {
+	FridgeId int64  `json:"fridgeId"`
+	DeviceId string `json:"deviceId"`
+	Ec2Url   string `json:"ec2Url"`
+}
