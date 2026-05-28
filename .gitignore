@@ -3,3 +3,5 @@
 images
 *.bin
 .env
+bugreport-*/
+niimbot_server
