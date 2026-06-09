@@ -1,22 +1,21 @@
 # NIIMBOT D100M Label Printer API
 
-<img align="right" src="https://github.com/Nangjanggo/niimbotD100M/raw/master/docs/niimbot.png" width="120">
-
 An API server to create a tag image for a text and print it through the NIIMBOT D110 label printer.
 
 ## Requirements
 
 - Python `>=3.10`
 - Golang
-- Linux (macOS doesn't support Bluetooth sockets, not tested on Windows)
+- Linux (Raspberry Pi OS recommended)
+- `bleak` Python BLE library (`pip3 install bleak`)
 - `cloudflared` (for tunnel registration on boot)
 
 ## Getting started
 
-- In the `niimprint` directory, run
+- Install Python dependencies
 
     ```shell
-    pip3 install -r requirements.txt
+    pip3 install --break-system-packages -r niimprint/requirements.txt
     ```
 
 - Run golang server
@@ -69,40 +68,23 @@ cd niimbotD100M
 ### 4. Python 의존성 설치
 
 ```bash
-pip3 install -r niimprint/requirements.txt
+pip3 install --break-system-packages -r niimprint/requirements.txt
 ```
 
 ### 5. 니임봇 블루투스 MAC 확인
 
-니임봇 프린터의 전원을 켠 뒤 아래 명령어로 MAC 주소를 확인합니다.
+니임봇 프린터 전원을 켠 뒤(파란 불) 아래 명령어로 MAC 주소를 확인합니다.
+**별도 페어링 불필요** — BLE 방식으로 직접 연결됩니다.
 
 ```bash
-bluetoothctl
-```
-
-```
-[bluetooth]# scan on
-# 잠시 기다리면 주변 기기 목록이 출력됨
-# [NEW] Device XX:XX:XX:XX:XX:XX D100M  ← 이름이 "D100M"인 항목의 MAC 주소를 복사
-[bluetooth]# scan off
-[bluetooth]# exit
+bluetoothctl scan on
+# [NEW] Device XX:XX:XX:XX:XX:XX D110_M-XXXXXXX  ← 이 MAC 주소를 복사
+# Ctrl+C로 종료
 ```
 
 확인한 MAC 주소를 다음 단계의 `PRINTER_MAC`에 입력합니다.
 
-### 6. 니임봇 블루투스 페어링
-
-```bash
-bluetoothctl
-```
-
-```
-[bluetooth]# pair XX:XX:XX:XX:XX:XX
-[bluetooth]# trust XX:XX:XX:XX:XX:XX
-[bluetooth]# exit
-```
-
-### 7. .env 작성
+### 6. .env 작성
 
 프로젝트 루트에 `.env` 파일을 생성합니다. 서버가 이 파일 없이는 시작되지 않으므로 반드시 먼저 만들어야 합니다.
 
@@ -117,7 +99,7 @@ DEVICE_ID=
 EC2_URL=
 ```
 
-### 8. 바이너리 빌드
+### 7. 바이너리 빌드
 
 ```bash
 go build -o niimbot_server .
@@ -125,11 +107,11 @@ go build -o niimbot_server .
 
 > 동일한 ARM64 환경이라면 기존 라즈베리파이의 `niimbot_server` 바이너리를 복사해도 됩니다.
 
-### 9. 폰트 확인
+### 8. 폰트 확인
 
 `fonts/NanumGothicBold.ttf` 파일이 있어야 합니다. 없으면 기존 라즈베리파이에서 복사하세요.
 
-### 10. systemd 서비스 등록
+### 9. systemd 서비스 등록
 
 ```bash
 sudo cp scripts/niimbot.service /etc/systemd/system/
@@ -168,7 +150,7 @@ WantedBy=multi-user.target
    └─ niimbot_server 실행 (:8769 포트 리슨)
 ```
 
-### 11. 앱에서 /setup 호출
+### 10. 앱에서 /setup 호출
 
 서버가 실행된 뒤, 앱에서 Pi와 같은 와이파이 상태로 아래 요청을 보냅니다.
 
@@ -184,7 +166,6 @@ curl -u admin:admin \
 ### 체크리스트
 
 - [ ] 니임봇 전원 켜고 블루투스 MAC 확인 (`bluetoothctl scan on`)
-- [ ] 니임봇 블루투스 페어링 (`bluetoothctl pair` / `trust`)
 - [ ] `.env`에 `USERNAME`, `PASSWORD`, `PRINTER_MAC` 작성
 - [ ] `fonts/NanumGothicBold.ttf` 존재 여부
 - [ ] `niimbot_server` 바이너리 빌드
