@@ -3,7 +3,7 @@ set -e
 cd "$(dirname "$0")"
 
 echo "=============================="
-echo "  Niimbot D110 초기 세팅"
+echo "  Niimbot D100M 초기 세팅"
 echo "=============================="
 echo ""
 
@@ -51,12 +51,12 @@ echo ""
 echo "  니임봇 프린터 전원을 켜고 페어링 모드로 진입시켜 주세요."
 read -p "  준비되면 Enter..."
 echo ""
-echo "  스캔 시작 — 'D110'이 보이면 MAC 주소를 확인하고 Ctrl+C로 종료하세요."
+echo "  스캔 시작 — 'D100M'이 보이면 MAC 주소를 확인하고 Ctrl+C로 종료하세요."
 echo "  -------------------------------------------------------"
 bluetoothctl scan on || true
 echo "  -------------------------------------------------------"
 echo ""
-read -p "  확인한 D110의 MAC 주소 입력: " PRINTER_MAC
+read -p "  확인한 D100M의 MAC 주소 입력: " PRINTER_MAC
 
 echo "  페어링 중..."
 bluetoothctl pair "$PRINTER_MAC"

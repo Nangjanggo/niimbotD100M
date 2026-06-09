@@ -1,6 +1,6 @@
-# NIIMBOT D110 Label Printer API
+# NIIMBOT D100M Label Printer API
 
-<img align="right" src="https://github.com/datumbrain/niimbot-d110-api/raw/master/docs/niimbot.png" width="120">
+<img align="right" src="https://github.com/Nangjanggo/niimbotD100M/raw/master/docs/niimbot.png" width="120">
 
 An API server to create a tag image for a text and print it through the NIIMBOT D110 label printer.
 
@@ -62,8 +62,8 @@ chmod +x /usr/local/bin/cloudflared
 ### 3. 코드 클론
 
 ```bash
-git clone https://github.com/datumbrain/niimbot-d110-api.git
-cd niimbot-d110-api
+git clone https://github.com/Nangjanggo/niimbotD100M.git
+cd niimbotD100M
 ```
 
 ### 4. Python 의존성 설치
@@ -83,7 +83,7 @@ bluetoothctl
 ```
 [bluetooth]# scan on
 # 잠시 기다리면 주변 기기 목록이 출력됨
-# [NEW] Device XX:XX:XX:XX:XX:XX D110  ← 이름이 "D110"인 항목의 MAC 주소를 복사
+# [NEW] Device XX:XX:XX:XX:XX:XX D100M  ← 이름이 "D100M"인 항목의 MAC 주소를 복사
 [bluetooth]# scan off
 [bluetooth]# exit
 ```
@@ -147,9 +147,9 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-WorkingDirectory=/home/yangsimfridge/niimbot-d110-api
-ExecStartPre=/home/yangsimfridge/niimbot-d110-api/scripts/register.sh
-ExecStart=/home/yangsimfridge/niimbot-d110-api/niimbot_server
+WorkingDirectory=/home/yangsimfridge/niimbotD100M
+ExecStartPre=/home/yangsimfridge/niimbotD100M/scripts/register.sh
+ExecStart=/home/yangsimfridge/niimbotD100M/niimbot_server
 Restart=always
 User=yangsimfridge
 

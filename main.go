@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const port = ":8769"
+const port = "0.0.0.0:8769"
 
 func main() {
 	err := godotenv.Load(".env")
