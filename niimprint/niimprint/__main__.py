@@ -1,12 +1,10 @@
 import argparse
-import asyncio
+import socket
 import struct
+import time
 
 import printencoder
 from PIL import Image
-from bleak import BleakClient
-
-CHAR_UUID = "bef8d6c9-9c21-4c9e-b632-bd58c1009f9f"
 
 
 def make_packet(type_, data):
@@ -16,42 +14,13 @@ def make_packet(type_, data):
     return bytes((0x55, 0x55, type_, len(data), *data, checksum, 0xaa, 0xaa))
 
 
-async def print_label(address, image_path, density=3, quantity=1):
-    img = Image.open(image_path)
-    if img.width / img.height > 1:
-        img = img.transpose(Image.ROTATE_270)
-
-    rows, cols = img.height, img.width
-    recv_queue = asyncio.Queue()
-
-    def on_notify(_, data):
-        recv_queue.put_nowait(data)
-
-    async def transceive(type_, data, timeout=2):
-        await client.write_gatt_char(CHAR_UUID, make_packet(type_, data), response=False)
-        try:
-            return await asyncio.wait_for(recv_queue.get(), timeout=timeout)
-        except asyncio.TimeoutError:
-            return b''
-
-    async with BleakClient(address) as client:
-        await client.start_notify(CHAR_UUID, on_notify)
-
-        await transceive(0x23, b'\x01')                          # SET_LABEL_TYPE
-        await transceive(0x21, bytes([density]))                  # SET_DENSITY
-        await transceive(0x01, bytes([0x00, quantity, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00]))  # START_PRINT
-        await transceive(0xa3, b'\x01')                          # PRINT_STATUS
-        await transceive(0x13, struct.pack('>HHHHHBBBH', rows, cols, quantity, 0, 0, 0, 0, 0, 0))  # SET_PAGE_SIZE
-
-        for pkt in printencoder.naive_encoder(img):
-            await client.write_gatt_char(CHAR_UUID, pkt.to_bytes(), response=False)
-        await asyncio.sleep(1)
-
-        await transceive(0xe3, b'\x01')                          # PAGE_END
-        await asyncio.sleep(3)
-        await transceive(0xa3, b'\x01')                          # PRINT_STATUS
-        await asyncio.sleep(2)
-        await transceive(0xf3, b'\x01')                          # PRINT_END
+def transceive(sock, type_, data, timeout=2):
+    sock.send(make_packet(type_, data))
+    sock.settimeout(timeout)
+    try:
+        return sock.recv(1024)
+    except socket.timeout:
+        return b''
 
 
 if __name__ == '__main__':
@@ -62,4 +31,31 @@ if __name__ == '__main__':
     parser.add_argument('image', help="PIL supported image file")
     args = parser.parse_args()
 
-    asyncio.run(print_label(args.address, args.image, args.density, args.quantity))
+    img = Image.open(args.image)
+    if img.width / img.height > 1:
+        img = img.transpose(Image.ROTATE_270)
+
+    rows, cols = img.height, img.width
+
+    sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+    sock.connect((args.address, 1))
+
+    transceive(sock, 0x23, b'\x01')                          # SET_LABEL_TYPE
+    transceive(sock, 0x21, bytes([args.density]))             # SET_DENSITY
+    # printStart9b: totalPages, 0,0,0,0, pageColor=0, speed=0, someFlag=0
+    transceive(sock, 0x01, bytes([0x00, args.quantity, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00]))
+    transceive(sock, 0xa3, b'\x01')                          # PRINT_STATUS
+    # setPageSize13b: rows, cols, copies, 0,0,0,0,0,0,0
+    transceive(sock, 0x13, struct.pack('>HHHHHBBBH', rows, cols, args.quantity, 0, 0, 0, 0, 0, 0))
+
+    for pkt in printencoder.naive_encoder(img):
+        sock.send(pkt.to_bytes())
+    time.sleep(1)
+
+    transceive(sock, 0xe3, b'\x01')                          # PAGE_END
+    time.sleep(3)
+    transceive(sock, 0xa3, b'\x01')                          # PRINT_STATUS
+    time.sleep(2)
+    transceive(sock, 0xf3, b'\x01')                          # PRINT_END
+
+    sock.close()

@@ -1,2 +1,1 @@
 Pillow >= 8.0
-bleak >= 0.20
